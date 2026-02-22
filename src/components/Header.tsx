@@ -12,8 +12,9 @@ interface HeaderProps {
 }
 
 const tabs = [
-  { id: 'report', label: 'Sobre o Relatório' },
   { id: 'area', label: 'Nossa Área' },
+  { id: 'portfolio', label: 'Relatórios Criados' },
+  { id: 'faq', label: 'FAQ dos Relatórios' },
 ];
 
 const Header = ({ activeTab, onTabChange }: HeaderProps) => {
@@ -34,7 +35,7 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-50 gradient-navy border-b border-navy-light/50">
-      <div className="container mx-auto px-6 py-4">
+      <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -79,23 +80,14 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             {isAdmin ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-accent font-medium">Admin</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={logout}
-                  className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-navy-light"
-                >
+                <Button variant="ghost" size="icon" onClick={logout} className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-navy-light">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-primary-foreground/40 hover:text-primary-foreground hover:bg-navy-light"
-                  >
+                  <Button variant="ghost" size="icon" className="text-primary-foreground/40 hover:text-primary-foreground hover:bg-navy-light">
                     <Shield className="w-4 h-4" />
                   </Button>
                 </DialogTrigger>
@@ -108,17 +100,12 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
                       type="password"
                       placeholder="Digite a senha"
                       value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setError(false);
-                      }}
+                      onChange={(e) => { setPassword(e.target.value); setError(false); }}
                       onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                       className={error ? 'border-destructive' : ''}
                     />
                     {error && <p className="text-destructive text-sm">Senha incorreta</p>}
-                    <Button onClick={handleLogin} className="w-full gradient-accent text-primary-foreground border-0">
-                      Entrar
-                    </Button>
+                    <Button onClick={handleLogin} className="w-full gradient-accent text-primary-foreground border-0">Entrar</Button>
                   </div>
                 </DialogContent>
               </Dialog>

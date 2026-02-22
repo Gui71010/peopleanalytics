@@ -2,43 +2,44 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminProvider } from '@/contexts/AdminContext';
 import Header from '@/components/Header';
-import ReportPage from '@/components/ReportPage';
-import AreaPage from '@/components/AreaPage';
+import NossaAreaPage from '@/components/NossaAreaPage';
+import RelatoriosCriadosPage from '@/components/RelatoriosCriadosPage';
+import FaqRelatoriosPage from '@/components/FaqRelatoriosPage';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('report');
+  const [activeTab, setActiveTab] = useState('area');
+
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'area':
+        return <NossaAreaPage />;
+      case 'portfolio':
+        return <RelatoriosCriadosPage />;
+      case 'faq':
+        return <FaqRelatoriosPage />;
+      default:
+        return <NossaAreaPage />;
+    }
+  };
 
   return (
     <AdminProvider>
       <div className="min-h-screen bg-background">
         <Header activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="container mx-auto px-6 py-10">
+        <main className="w-full px-6 lg:px-10 py-10">
           <AnimatePresence mode="wait">
-            {activeTab === 'report' ? (
-              <motion.div
-                key="report"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ReportPage />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="area"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <AreaPage />
-              </motion.div>
-            )}
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderPage()}
+            </motion.div>
           </AnimatePresence>
         </main>
 
-        {/* Footer */}
         <footer className="gradient-navy mt-20 py-8 text-center">
           <p className="text-primary-foreground/50 text-sm">
             © {new Date().getFullYear()} Diretoria de Pessoas — Business Intelligence
