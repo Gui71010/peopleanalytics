@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, KeyRound } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,23 +18,38 @@ const tabs = [
 ];
 
 const Header = ({ activeTab, onTabChange }: HeaderProps) => {
-  const { isAdmin, login, logout } = useAdmin();
+  const { isAdmin, login, logout, resetPassword } = useAdmin();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
-  const handleLogin = () => {
-    if (login(password)) {
+  const handleLogin = async () => {
+    setLoading(true);
+    setError('');
+    const success = await login(email, password);
+    if (success) {
       setOpen(false);
+      setEmail('');
       setPassword('');
-      setError(false);
     } else {
-      setError(true);
+      setError('Email ou senha incorretos');
     }
+    setLoading(false);
+  };
+
+  const handleReset = async () => {
+    setLoading(true);
+    await resetPassword(resetEmail);
+    setLoading(false);
+    setResetOpen(false);
   };
 
   return (
-    <header className="sticky top-0 z-50 gradient-navy border-b border-navy-light/50">
+    <header className="sticky top-0 z-50 gradient-navy border-b border-border/20">
       <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
           <motion.div
@@ -53,7 +68,7 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             </div>
           </motion.div>
 
-          <nav className="flex items-center gap-1 bg-navy-light/50 rounded-xl p-1">
+          <nav className="flex items-center gap-1 bg-secondary/50 rounded-xl p-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -80,14 +95,40 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             {isAdmin ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-accent font-medium">Admin</span>
-                <Button variant="ghost" size="icon" onClick={logout} className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-navy-light">
+                <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-secondary" title="Alterar senha">
+                      <KeyRound className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="glass-card">
+                    <DialogHeader>
+                      <DialogTitle className="font-display">Alterar Senha</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <p className="text-sm text-muted-foreground">
+                        Um email será enviado para você redefinir sua senha.
+                      </p>
+                      <Input
+                        type="email"
+                        placeholder="Seu email de admin"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                      <Button onClick={handleReset} disabled={loading} className="w-full gradient-accent text-primary-foreground border-0">
+                        {loading ? 'Enviando...' : 'Enviar email de recuperação'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button variant="ghost" size="icon" onClick={logout} className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-secondary">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-primary-foreground/40 hover:text-primary-foreground hover:bg-navy-light">
+                  <Button variant="ghost" size="icon" className="text-primary-foreground/40 hover:text-primary-foreground hover:bg-secondary">
                     <Shield className="w-4 h-4" />
                   </Button>
                 </DialogTrigger>
@@ -97,15 +138,22 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
                   </DialogHeader>
                   <div className="space-y-4 pt-2">
                     <Input
-                      type="password"
-                      placeholder="Digite a senha"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(false); }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                      className={error ? 'border-destructive' : ''}
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setError(''); }}
                     />
-                    {error && <p className="text-destructive text-sm">Senha incorreta</p>}
-                    <Button onClick={handleLogin} className="w-full gradient-accent text-primary-foreground border-0">Entrar</Button>
+                    <Input
+                      type="password"
+                      placeholder="Senha"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    />
+                    {error && <p className="text-destructive text-sm">{error}</p>}
+                    <Button onClick={handleLogin} disabled={loading} className="w-full gradient-accent text-primary-foreground border-0">
+                      {loading ? 'Entrando...' : 'Entrar'}
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>

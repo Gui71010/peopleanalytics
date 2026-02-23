@@ -2,20 +2,19 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, User } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
-import AnalystCard from '@/components/AnalystCard';
 import ReportCard from '@/components/ReportCard';
 import ReportDetailModal from '@/components/ReportDetailModal';
 
 const RelatoriosCriadosPage = () => {
-  const { content, isAdmin, updateContent, addReport } = useAdmin();
+  const { content, isAdmin, updateSetting, addReport } = useAdmin();
   const [selectedAnalystId, setSelectedAnalystId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   const filteredReports = selectedAnalystId
-    ? content.reports.filter((r) => r.creatorId === selectedAnalystId)
+    ? content.reports.filter((r) => r.creator_id === selectedAnalystId)
     : content.reports;
 
-  const getCreatorName = (id: string) => content.analysts.find((a) => a.id === id)?.name || 'Desconhecido';
+  const getCreatorName = (id: string | null) => content.analysts.find((a) => a.id === id)?.name || 'Desconhecido';
 
   const selectedReport = content.reports.find((r) => r.id === selectedReportId);
 
@@ -39,7 +38,7 @@ const RelatoriosCriadosPage = () => {
             <textarea
               className="text-primary-foreground/80 leading-relaxed text-lg bg-transparent border border-primary-foreground/10 rounded-lg p-3 w-full min-h-[80px] outline-none focus:border-accent"
               value={content.portfolioDescription}
-              onChange={(e) => updateContent({ portfolioDescription: e.target.value })}
+              onChange={(e) => updateSetting('portfolioDescription', e.target.value)}
             />
           ) : (
             <p className="text-primary-foreground/80 leading-relaxed text-lg">
@@ -96,12 +95,12 @@ const RelatoriosCriadosPage = () => {
             <button
               onClick={() =>
                 addReport({
-                  id: Date.now().toString(),
                   name: 'Novo Relatório',
-                  creatorId: content.analysts[0]?.id || '',
+                  creator_id: content.analysts[0]?.id || null,
                   description: 'Descrição do relatório.',
                   images: [],
                   metrics: [],
+                  sort_order: content.reports.length + 1,
                 })
               }
               className="px-4 py-2 rounded-lg gradient-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
@@ -117,7 +116,7 @@ const RelatoriosCriadosPage = () => {
               <ReportCard
                 key={report.id}
                 report={report}
-                creatorName={getCreatorName(report.creatorId)}
+                creatorName={getCreatorName(report.creator_id)}
                 index={i}
                 onClick={() => setSelectedReportId(report.id)}
               />
@@ -131,7 +130,7 @@ const RelatoriosCriadosPage = () => {
         {selectedReport && (
           <ReportDetailModal
             report={selectedReport}
-            creatorName={getCreatorName(selectedReport.creatorId)}
+            creatorName={getCreatorName(selectedReport.creator_id)}
             onClose={() => setSelectedReportId(null)}
             showMetrics={false}
           />

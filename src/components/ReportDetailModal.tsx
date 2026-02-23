@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Report, useAdmin } from '@/contexts/AdminContext';
 
 interface ReportDetailModalProps {
@@ -31,31 +31,31 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="glass-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+        className="glass-card rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto"
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           {isAdmin ? (
             <input
-              className="text-2xl font-display font-bold text-foreground bg-transparent border-b border-border w-full outline-none focus:border-accent"
+              className="text-xl font-display font-bold text-foreground bg-transparent border-b border-border w-full outline-none focus:border-accent"
               value={report.name}
               onChange={(e) => updateReport(report.id, { name: e.target.value })}
             />
           ) : (
-            <h3 className="text-2xl font-display font-bold text-foreground">{report.name}</h3>
+            <h3 className="text-xl font-display font-bold text-foreground">{report.name}</h3>
           )}
           <button onClick={onClose} className="shrink-0 ml-4 p-2 rounded-lg hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 grid md:grid-cols-2 gap-8">
-          {/* Image carousel */}
+        <div className="p-5 grid md:grid-cols-2 gap-6">
+          {/* Image carousel - fixed size */}
           <div className="space-y-3">
-            <div className="aspect-video bg-muted rounded-xl overflow-hidden relative">
+            <div className="w-full aspect-[4/3] bg-muted rounded-xl overflow-hidden relative flex items-center justify-center">
               {images[imgIndex] ? (
                 <img src={images[imgIndex]} alt="" className="w-full h-full object-contain" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">Sem imagem</div>
+                <div className="text-muted-foreground text-sm">Sem imagem</div>
               )}
               {images.length > 1 && (
                 <>
@@ -79,7 +79,7 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">URLs das imagens (uma por linha)</label>
                 <textarea
-                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[80px]"
+                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[60px]"
                   value={report.images.join('\n')}
                   onChange={(e) => updateReport(report.id, { images: e.target.value.split('\n').filter(Boolean) })}
                   placeholder="Cole as URLs das imagens, uma por linha"
@@ -89,7 +89,7 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
           </div>
 
           {/* Info side */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <span className="text-xs text-muted-foreground">Criado por</span>
               <p className="text-accent font-medium">{creatorName}</p>
@@ -99,7 +99,7 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
               <div>
                 <label className="text-xs text-muted-foreground">Descrição</label>
                 <textarea
-                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[80px]"
+                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[60px]"
                   value={report.description}
                   onChange={(e) => updateReport(report.id, { description: e.target.value })}
                 />
@@ -107,7 +107,7 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
             ) : (
               <div>
                 <span className="text-xs text-muted-foreground">Descrição</span>
-                <p className="text-foreground leading-relaxed">{report.description}</p>
+                <p className="text-foreground leading-relaxed text-sm">{report.description}</p>
               </div>
             )}
 
@@ -115,18 +115,16 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
               <div>
                 <span className="text-xs text-muted-foreground mb-2 block">Métricas</span>
                 {isAdmin ? (
-                  <div className="space-y-2">
-                    <textarea
-                      className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[80px]"
-                      value={report.metrics.join('\n')}
-                      onChange={(e) => updateReport(report.id, { metrics: e.target.value.split('\n').filter(Boolean) })}
-                      placeholder="Uma métrica por linha (ex: Inscritos: 10.000)"
-                    />
-                  </div>
+                  <textarea
+                    className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm min-h-[60px]"
+                    value={report.metrics.join('\n')}
+                    onChange={(e) => updateReport(report.id, { metrics: e.target.value.split('\n').filter(Boolean) })}
+                    placeholder="Uma métrica por linha"
+                  />
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
                     {report.metrics.map((m, i) => (
-                      <div key={i} className="px-4 py-3 rounded-lg bg-muted/50 border border-border text-sm font-medium text-foreground">
+                      <div key={i} className="px-3 py-2 rounded-lg bg-muted/50 border border-border text-sm font-medium text-foreground">
                         {m}
                       </div>
                     ))}
@@ -136,16 +134,19 @@ const ReportDetailModal = ({ report, creatorName, onClose, showMetrics = true }:
             )}
 
             {isAdmin && (
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">ID do Criador</label>
-                <input
-                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm"
-                  value={report.creatorId}
-                  onChange={(e) => updateReport(report.id, { creatorId: e.target.value })}
-                />
+              <div className="pt-2 border-t border-border">
+                <label className="text-xs text-muted-foreground">ID do Criador (analista)</label>
+                <select
+                  className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm mt-1"
+                  value={report.creator_id || ''}
+                  onChange={(e) => updateReport(report.id, { creator_id: e.target.value })}
+                >
+                  <option value="">Selecionar analista</option>
+                  {/* Will be populated by parent */}
+                </select>
                 <button
                   onClick={() => { removeReport(report.id); onClose(); }}
-                  className="text-destructive text-sm hover:underline flex items-center gap-1 mt-2"
+                  className="text-destructive text-sm hover:underline flex items-center gap-1 mt-3"
                 >
                   <Trash2 className="w-3 h-3" /> Remover relatório
                 </button>

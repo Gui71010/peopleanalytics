@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, User } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import AnalystCard from '@/components/AnalystCard';
 import ReportCard from '@/components/ReportCard';
 import ReportDetailModal from '@/components/ReportDetailModal';
 
 const FaqRelatoriosPage = () => {
-  const { content, isAdmin, updateContent, addReport } = useAdmin();
+  const { content, isAdmin, updateSetting, addReport } = useAdmin();
   const [selectedAnalystId, setSelectedAnalystId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   const filteredReports = selectedAnalystId
-    ? content.reports.filter((r) => r.creatorId === selectedAnalystId)
+    ? content.reports.filter((r) => r.creator_id === selectedAnalystId)
     : content.reports;
 
-  const getCreatorName = (id: string) => content.analysts.find((a) => a.id === id)?.name || 'Desconhecido';
+  const getCreatorName = (id: string | null) => content.analysts.find((a) => a.id === id)?.name || 'Desconhecido';
 
   const selectedReport = content.reports.find((r) => r.id === selectedReportId);
 
@@ -41,7 +41,7 @@ const FaqRelatoriosPage = () => {
             <textarea
               className="text-primary-foreground/80 leading-relaxed text-lg bg-transparent border border-primary-foreground/10 rounded-lg p-3 w-full min-h-[100px] outline-none focus:border-accent"
               value={content.faqDescription}
-              onChange={(e) => updateContent({ faqDescription: e.target.value })}
+              onChange={(e) => updateSetting('faqDescription', e.target.value)}
             />
           ) : (
             <p className="text-primary-foreground/80 leading-relaxed text-lg">
@@ -57,7 +57,7 @@ const FaqRelatoriosPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.6 }}
       >
-        <h3 className="text-2xl font-display font-bold text-foreground mb-6">Nossos Analistas</h3>
+        <h3 className="text-2xl font-display font-bold text-foreground mb-6">Nossa Equipe</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {content.analysts.map((analyst, i) => (
             <AnalystCard
@@ -87,12 +87,12 @@ const FaqRelatoriosPage = () => {
             <button
               onClick={() =>
                 addReport({
-                  id: Date.now().toString(),
                   name: 'Novo Relatório',
-                  creatorId: selectedAnalystId || content.analysts[0]?.id || '',
+                  creator_id: selectedAnalystId || content.analysts[0]?.id || null,
                   description: 'Descrição do relatório.',
                   images: [],
                   metrics: ['Métrica: valor'],
+                  sort_order: content.reports.length + 1,
                 })
               }
               className="px-4 py-2 rounded-lg gradient-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
@@ -108,7 +108,7 @@ const FaqRelatoriosPage = () => {
               <ReportCard
                 key={report.id}
                 report={report}
-                creatorName={getCreatorName(report.creatorId)}
+                creatorName={getCreatorName(report.creator_id)}
                 index={i}
                 onClick={() => setSelectedReportId(report.id)}
               />
@@ -122,7 +122,7 @@ const FaqRelatoriosPage = () => {
         {selectedReport && (
           <ReportDetailModal
             report={selectedReport}
-            creatorName={getCreatorName(selectedReport.creatorId)}
+            creatorName={getCreatorName(selectedReport.creator_id)}
             onClose={() => setSelectedReportId(null)}
             showMetrics
           />
