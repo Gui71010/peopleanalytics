@@ -24,18 +24,18 @@ const AnalystCard = ({ analyst, index, isSelected, onClick, showDetails, editabl
         isSelected ? 'ring-2 ring-accent shadow-xl shadow-accent/10' : ''
       }`}
     >
-      <div className="flex items-center gap-4">
-        <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+      <div className="flex flex-col items-center text-center gap-3">
+        <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 bg-muted flex items-center justify-center ring-2 ring-accent/20">
           {analyst.photo ? (
             <img src={analyst.photo} alt={analyst.name} className="w-full h-full object-cover" />
           ) : (
-            <User className="w-8 h-8 text-muted-foreground" />
+            <User className="w-10 h-10 text-muted-foreground" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-display font-semibold text-lg text-foreground truncate">{analyst.name}</h4>
+        <div className="min-w-0">
+          <h4 className="font-display font-semibold text-lg text-foreground">{analyst.name}</h4>
           <p className="text-sm text-muted-foreground">{analyst.role}</p>
-          <span className="inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
+          <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
             {analyst.area}
           </span>
         </div>
@@ -50,7 +50,7 @@ const AnalystCard = ({ analyst, index, isSelected, onClick, showDetails, editabl
           className="mt-4 pt-4 border-t border-border"
         >
           {isAdmin && editable ? (
-            <div className="space-y-3">
+            <div className="space-y-3 text-left">
               <div>
                 <label className="text-xs text-muted-foreground">Nome</label>
                 <input className="w-full p-2 rounded-lg border border-border bg-background text-foreground text-sm" value={analyst.name} onChange={(e) => updateAnalyst(analyst.id, { name: e.target.value })} />
@@ -76,7 +76,7 @@ const AnalystCard = ({ analyst, index, isSelected, onClick, showDetails, editabl
               </button>
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm leading-relaxed">{analyst.bio}</p>
+            <p className="text-muted-foreground text-sm leading-relaxed text-center">{analyst.bio}</p>
           )}
         </motion.div>
       )}

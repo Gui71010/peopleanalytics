@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface Analyst {
   id: string;
@@ -7,15 +9,17 @@ export interface Analyst {
   area: string;
   photo: string;
   bio: string;
+  sort_order: number;
 }
 
 export interface Report {
   id: string;
   name: string;
-  creatorId: string;
+  creator_id: string | null;
   description: string;
   images: string[];
   metrics: string[];
+  sort_order: number;
 }
 
 interface SiteContent {
@@ -28,40 +32,28 @@ interface SiteContent {
 
 interface AdminContextType {
   isAdmin: boolean;
-  login: (password: string) => boolean;
-  logout: () => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
   content: SiteContent;
-  updateContent: (content: Partial<SiteContent>) => void;
-  addAnalyst: (analyst: Analyst) => void;
-  updateAnalyst: (id: string, data: Partial<Analyst>) => void;
-  removeAnalyst: (id: string) => void;
-  addReport: (report: Report) => void;
-  updateReport: (id: string, data: Partial<Report>) => void;
-  removeReport: (id: string) => void;
+  updateSetting: (key: string, value: string) => Promise<void>;
+  addAnalyst: (analyst: Omit<Analyst, 'id'>) => Promise<void>;
+  updateAnalyst: (id: string, data: Partial<Analyst>) => Promise<void>;
+  removeAnalyst: (id: string) => Promise<void>;
+  addReport: (report: Omit<Report, 'id'>) => Promise<void>;
+  updateReport: (id: string, data: Partial<Report>) => Promise<void>;
+  removeReport: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const DEFAULT_CONTENT: SiteContent = {
-  areaDescription:
-    'Nossa área de Business Intelligence atua dentro da Diretoria de Pessoas, sendo responsável por transformar dados em insights estratégicos para a tomada de decisão. A equipe é composta por analistas especializados em diferentes squads, cada um focado em uma vertical do negócio.',
-  faqDescription:
-    'Bem-vindo ao FAQ dos Relatórios! Aqui você pode explorar as métricas de cada relatório criado pelo nosso time de dados. Selecione um analista para filtrar os relatórios por responsável e clique em qualquer relatório para ver seus detalhes e métricas.',
-  portfolioDescription:
-    'Conheça todos os relatórios produzidos pela nossa equipe de Business Intelligence. Selecione um analista para filtrar ou navegue por todo o portfólio.',
-  analysts: [
-    { id: '1', name: 'Allyson Nunes', role: 'Analista de BI', area: 'Treinamento', photo: '', bio: 'Responsável pelos relatórios de treinamento e desenvolvimento de pessoas.' },
-    { id: '2', name: 'Alessa Kettney', role: 'Analista de BI', area: 'Medicina e Business Partner', photo: '', bio: 'Responsável pelos relatórios de medicina ocupacional e atuação como Business Partner.' },
-    { id: '3', name: 'Guilherme Santiago', role: 'Analista de BI', area: 'Recrutamento e Seleção', photo: '', bio: 'Responsável pelos relatórios de recrutamento, seleção e funil admissional.' },
-    { id: '4', name: 'Matheus Wilson', role: 'Analista de BI', area: 'Corporativo', photo: '', bio: 'Responsável pelos relatórios corporativos e indicadores estratégicos.' },
-  ],
-  reports: [
-    { id: '1', name: 'Gestão Candidato SOU', creatorId: '3', description: 'Funil admissional completo com métricas de inscritos, aprovados e contratados.', images: [], metrics: ['Inscritos Vaga: 10.691', 'Aprovados: 10.428', 'Doc Aprovado: 4.294', 'Assinatura Contrato: 3.566'] },
-    { id: '2', name: 'Treinamento Corporativo', creatorId: '1', description: 'Acompanhamento de horas de treinamento e eficácia dos programas.', images: [], metrics: ['Horas Totais: 5.200', 'Participantes: 1.340'] },
-    { id: '3', name: 'Indicadores de Saúde', creatorId: '2', description: 'Relatório de medicina ocupacional com indicadores de saúde dos colaboradores.', images: [], metrics: ['Exames Realizados: 3.800', 'Atestados: 420'] },
-    { id: '4', name: 'Headcount Corporativo', creatorId: '4', description: 'Análise de headcount e movimentações de pessoal.', images: [], metrics: ['Headcount: 8.500', 'Turnover: 2.3%'] },
-  ],
+  areaDescription: '',
+  faqDescription: '',
+  portfolioDescription: '',
+  analysts: [],
+  reports: [],
 };
-
-const ADMIN_PASSWORD = 'Guisantos88';
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
@@ -72,49 +64,168 @@ export const useAdmin = () => {
 };
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('admin_auth') === 'true');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [content, setContent] = useState<SiteContent>(DEFAULT_CONTENT);
 
-  const [content, setContent] = useState<SiteContent>(() => {
-    const saved = localStorage.getItem('site_content_v2');
-    return saved ? JSON.parse(saved) : DEFAULT_CONTENT;
-  });
+  const fetchData = useCallback(async () => {
+    try {
+      const [settingsRes, analystsRes, reportsRes] = await Promise.all([
+        supabase.from('site_settings').select('*'),
+        supabase.from('analysts').select('*').order('sort_order'),
+        supabase.from('reports').select('*').order('sort_order'),
+      ]);
 
-  const saveContent = useCallback((c: SiteContent) => {
-    setContent(c);
-    localStorage.setItem('site_content_v2', JSON.stringify(c));
+      const settings: Record<string, string> = {};
+      (settingsRes.data || []).forEach((s: any) => { settings[s.key] = s.value; });
+
+      setContent({
+        areaDescription: settings.areaDescription || '',
+        faqDescription: settings.faqDescription || '',
+        portfolioDescription: settings.portfolioDescription || '',
+        analysts: (analystsRes.data || []).map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          role: a.role,
+          area: a.area,
+          photo: a.photo || '',
+          bio: a.bio || '',
+          sort_order: a.sort_order || 0,
+        })),
+        reports: (reportsRes.data || []).map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          creator_id: r.creator_id,
+          description: r.description || '',
+          images: r.images || [],
+          metrics: r.metrics || [],
+          sort_order: r.sort_order || 0,
+        })),
+      });
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
   }, []);
 
-  const login = (password: string) => {
-    if (password === ADMIN_PASSWORD) {
-      setIsAdmin(true);
-      sessionStorage.setItem('admin_auth', 'true');
-      return true;
+  // Check auth state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin');
+        setIsAdmin(!!(roles && roles.length > 0));
+      }
+      setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin');
+        setIsAdmin(!!(roles && roles.length > 0));
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    checkAuth();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch data on mount
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error('Login error:', error.message);
+      return false;
     }
-    return false;
+    return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setIsAdmin(false);
-    sessionStorage.removeItem('admin_auth');
   };
 
-  const updateContent = (partial: Partial<SiteContent>) => saveContent({ ...content, ...partial });
+  const resetPassword = async (email: string): Promise<boolean> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast.error('Erro ao enviar email de recuperação');
+      return false;
+    }
+    toast.success('Email de recuperação enviado!');
+    return true;
+  };
 
-  const addAnalyst = (analyst: Analyst) => saveContent({ ...content, analysts: [...content.analysts, analyst] });
-  const updateAnalyst = (id: string, data: Partial<Analyst>) =>
-    saveContent({ ...content, analysts: content.analysts.map((a) => (a.id === id ? { ...a, ...data } : a)) });
-  const removeAnalyst = (id: string) =>
-    saveContent({ ...content, analysts: content.analysts.filter((a) => a.id !== id) });
+  const updateSetting = async (key: string, value: string) => {
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ value })
+      .eq('key', key);
+    if (error) { toast.error('Erro ao salvar'); return; }
+    setContent(prev => ({ ...prev, [key]: value }));
+  };
 
-  const addReport = (report: Report) => saveContent({ ...content, reports: [...content.reports, report] });
-  const updateReport = (id: string, data: Partial<Report>) =>
-    saveContent({ ...content, reports: content.reports.map((r) => (r.id === id ? { ...r, ...data } : r)) });
-  const removeReport = (id: string) =>
-    saveContent({ ...content, reports: content.reports.filter((r) => r.id !== id) });
+  const addAnalyst = async (analyst: Omit<Analyst, 'id'>) => {
+    const { data, error } = await supabase.from('analysts').insert(analyst).select().single();
+    if (error) { toast.error('Erro ao adicionar'); return; }
+    setContent(prev => ({ ...prev, analysts: [...prev.analysts, data as any] }));
+  };
+
+  const updateAnalyst = async (id: string, data: Partial<Analyst>) => {
+    const { error } = await supabase.from('analysts').update(data).eq('id', id);
+    if (error) { toast.error('Erro ao salvar'); return; }
+    setContent(prev => ({
+      ...prev,
+      analysts: prev.analysts.map(a => a.id === id ? { ...a, ...data } : a),
+    }));
+  };
+
+  const removeAnalyst = async (id: string) => {
+    const { error } = await supabase.from('analysts').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    setContent(prev => ({ ...prev, analysts: prev.analysts.filter(a => a.id !== id) }));
+  };
+
+  const addReport = async (report: Omit<Report, 'id'>) => {
+    const { data, error } = await supabase.from('reports').insert(report).select().single();
+    if (error) { toast.error('Erro ao adicionar'); return; }
+    setContent(prev => ({ ...prev, reports: [...prev.reports, data as any] }));
+  };
+
+  const updateReport = async (id: string, data: Partial<Report>) => {
+    const { error } = await supabase.from('reports').update(data).eq('id', id);
+    if (error) { toast.error('Erro ao salvar'); return; }
+    setContent(prev => ({
+      ...prev,
+      reports: prev.reports.map(r => r.id === id ? { ...r, ...data } : r),
+    }));
+  };
+
+  const removeReport = async (id: string) => {
+    const { error } = await supabase.from('reports').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    setContent(prev => ({ ...prev, reports: prev.reports.filter(r => r.id !== id) }));
+  };
 
   return (
     <AdminContext.Provider
-      value={{ isAdmin, login, logout, content, updateContent, addAnalyst, updateAnalyst, removeAnalyst, addReport, updateReport, removeReport }}
+      value={{
+        isAdmin, isLoading, login, logout, resetPassword, content,
+        updateSetting, addAnalyst, updateAnalyst, removeAnalyst,
+        addReport, updateReport, removeReport, refreshData: fetchData,
+      }}
     >
       {children}
     </AdminContext.Provider>
